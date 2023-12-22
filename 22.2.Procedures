@@ -1,0 +1,50 @@
+function executeProcedure(
+    state: AppState,
+    name: string,
+    arguments: Map<string, any>,
+    fields: Map<string, models.Field> | null,
+    collectionRelationships: Map<string, models.Relationship>
+): models.MutationOperationResults | Error {
+    switch (name) {
+        case "upsert_article":
+            return executeUpsertArticle(state, arguments, fields, collectionRelationships);
+
+        default:
+            throw new Error("Unknown procedure");
+    }
+}
+
+function executeUpsertArticle(
+    state: AppState,
+    arguments: Map<string, any>,
+    fields: Map<string, models.Field> | null,
+    collectionRelationships: Map<string, models.Relationship>
+): models.MutationOperationResults | Error {
+    const article = arguments.get("article");
+    if (!article || typeof article !== 'object' || Array.isArray(article)) {
+        throw new Error("Invalid article argument");
+    }
+
+    const id = article["id"];
+    if (typeof id !== 'number') {
+        throw new Error("Invalid or missing article id");
+    }
+
+    const newRow = new Map(Object.entries(article));
+    const oldRow = state.articles.set(id, newRow);
+
+    let returning = null;
+    if (oldRow && fields) {
+        const returnedRow = new Map<string, any>();
+        for (const [fieldName, field] of fields) {
+            const fieldValue = evalField(collectionRelationships, new Map(), state, field, oldRow);
+            returnedRow.set(fieldName, fieldValue);
+        }
+        returning = [returnedRow];
+    }
+
+    return {
+        affectedRows: 1,
+        returning: returning
+    };
+}

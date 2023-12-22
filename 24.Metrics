@@ -1,0 +1,31 @@
+async function getHealthz(): Promise<number> {
+    return 204; // Equivalent to StatusCode::NO_CONTENT
+}
+
+async function getMetrics(state: { state: AppState }): Promise<string> {
+    const lockedState = state.state; // Assuming direct access to AppState
+
+    if (!lockedState.metrics) {
+        throw new Error("Cannot encode metrics");
+    }
+
+    return lockedState.metrics.asText(); // Assuming asText() method exists in your metrics implementation
+}
+
+async function metricsMiddleware<T>(
+    state: { state: AppState },
+    request: Reques<T>,
+    next: NextFunction
+): Promise<Response> {
+    // Extract and clone metrics from state
+    const metrics = { ...state.state.metrics }; // Assuming a simple clone, adjust based on your metrics implementation
+
+    metrics.totalRequests++;
+    metrics.activeRequests++;
+
+    const response = await next(request); // Assuming next is a function that takes a request and returns a response
+
+    metrics.activeRequests--;
+
+    return response;
+}

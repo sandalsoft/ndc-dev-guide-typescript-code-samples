@@ -1,0 +1,74 @@
+function evalPath(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    path: models.PathElement[],
+    item: Row
+): Row[] | Error {
+    let result: Row[] = [item];
+
+    for (const pathElement of path) {
+        const relationshipName = pathElement.relationship;
+        const relationship = collectionRelationships.get(relationshipName);
+        if (!relationship) {
+            throw new Error("Invalid relationship name in path");
+        }
+
+        const evalResult = evalPathElement(
+            collectionRelationships,
+            variables,
+            state,
+            relationship,
+            pathElement.arguments,
+            result,
+            pathElement.predicate
+        );
+        if (evalResult instanceof Error) return evalResult;
+
+        result = evalResult;
+    }
+
+    return result;
+}
+
+function evalPathElement(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    relationship: models.Relationship,
+    arguments: Map<string, models.RelationshipArgument>,
+    source: Row[],
+    predicate: models.Expression
+): Row[] | Error {
+    let matchingRows: Row[] = [];
+
+    for (const srcRow of source) {
+        const allArguments = new Map<string, any>();
+
+        // Merge and evaluate relationship arguments
+        for (const [argumentName, argumentValue] of [...Object.entries(relationship.arguments), ...arguments.entries()]) {
+            const evalResult = evalRelationshipArgument(variables, srcRow, argumentValue);
+            if (evalResult instanceof Error) return evalResult;
+
+            if (allArguments.has(argumentName)) {
+                throw new Error("Duplicate argument names");
+            }
+
+            allArguments.set(argumentName, evalResult);
+        }
+
+        const target = getCollectionByName(relationship.targetCollection, allArguments, state);
+        if (target instanceof Error) return target;
+
+        for (const tgtRow of target) {
+            const columnMappingResult = evalColumnMapping(relationship, srcRow, tgtRow);
+            const expressionResult = evalExpression(collectionRelationships, variables, state, predicate, tgtRow, tgtRow);
+
+            if (columnMappingResult && expressionResult) {
+                matchingRows.push(tgtRow);
+            }
+        }
+    }
+
+    return matchingRows;
+}

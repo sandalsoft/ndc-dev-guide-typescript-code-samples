@@ -1,0 +1,6 @@
+async function postExplain(
+    _request: models.QueryRequest
+): Promise<models.ExplainResponse> {
+    throw new Error("Explain is not supported");
+}
+

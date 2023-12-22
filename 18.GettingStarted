@@ -1,0 +1,54 @@
+
+
+type Row = Record<string, any>;
+
+type Row = Record<string, any>; // Assuming Row is defined similar to this
+type Metrics = any; // Replace 'any' with the actual type of Metrics
+
+interface AppState {
+    articles: Record<number, Row>;
+    authors: Record<number, Row>;
+    metrics: Metrics;
+}
+
+function initAppState(): AppState {
+    // Assuming readCsv and Metrics.new are defined and return appropriate types
+    const articles = readCsv("articles.csv");
+    const authors = readCsv("authors.csv");
+
+    const metrics = new Metrics();
+
+    return {
+        articles,
+        authors,
+        metrics,
+    };
+}
+
+import express from 'express';
+import { Router } from 'express';
+import { getHealthz, getMetrics, getCapabilities, getSchema, postQuery, postMutation, postExplain, metricsMiddleware } from './handlers'; // Assume these handlers are defined
+import { initAppState } from './appState'; // Assume initAppState is defined
+import http from 'http';
+
+const app = express();
+const router = Router();
+
+const appState = { state: initAppState() }; // Using an object to mimic Arc<Mutex<T>>
+
+router.get('/healthz', getHealthz.bind(null, appState));
+router.get('/metrics', getMetrics.bind(null, appState));
+router.get('/capabilities', getCapabilities.bind(null, appState));
+router.get('/schema', getSchema.bind(null, appState));
+router.post('/query', postQuery.bind(null, appState));
+router.post('/mutation', postMutation.bind(null, appState));
+router.post('/explain', postExplain.bind(null, appState));
+
+app.use(metricsMiddleware(appState)); // Middleware with app state
+app.use(router);
+
+const server = http.createServer(app);
+server.listen(8100, '0.0.0.0', () => {
+    console.log('Server running on http://0.0.0.0:8100');
+});
+

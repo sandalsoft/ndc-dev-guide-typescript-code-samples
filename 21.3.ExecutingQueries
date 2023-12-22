@@ -1,0 +1,11 @@
+
+function executeQuery(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    query: models.Query,
+    root: Root,
+    collection: Vec<Row>
+): models.RowSet | Error {
+    // Function implementation here
+}

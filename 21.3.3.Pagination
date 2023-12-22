@@ -1,0 +1,16 @@
+const paginated: Row[] = paginate(filtered, query.limit, query.offset);
+
+
+function paginate(
+    collection: Row[],
+    limit: number | null,
+    offset: number | null
+): Row[] {
+    const start = offset ?? 0;
+    if (limit !== null) {
+        return collection.slice(start, start + limit);
+    } else {
+        return collection.slice(start);
+    }
+}
+

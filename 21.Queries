@@ -1,0 +1,6 @@
+async function postQuery(
+    state: { state: AppState },
+    request: models.QueryRequest
+): Promise<models.QueryResponse> {
+    // Function implementation here
+}

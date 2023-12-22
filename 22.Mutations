@@ -1,0 +1,17 @@
+async function postMutation(
+    state: { state: AppState },
+    request: models.MutationRequest
+): Promise<models.MutationResponse> {
+    const lockedState = state.state; // Assuming direct access to AppState in TypeScript
+
+    const operationResults = [];
+    for (const operation of request.operations) {
+        const operationResult = executeMutationOperation(lockedState, request.collectionRelationships, operation);
+        if (operationResult instanceof Error) {
+            throw operationResult;
+        }
+        operationResults.push(operationResult);
+    }
+
+    return { operationResults };
+}

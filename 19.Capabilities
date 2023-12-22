@@ -1,0 +1,16 @@
+async function getCapabilities(): Promise<models.CapabilitiesResponse> {
+    return {
+        versions: "^0.1.0",
+        capabilities: {
+            explain: null,
+            query: {
+                aggregates: {},
+                variables: {},
+            },
+            relationships: {
+                order_by_aggregate: {},
+                relation_comparisons: {},
+            },
+        },
+    };
+}

@@ -1,0 +1,63 @@
+const rows = query.fields
+    ? query.fields.map(field => {
+          const rows: Array<Map<string, models.RowFieldValue>> = [];
+          for (const item of paginated) {
+              const row = new Map<string, models.RowFieldValue>();
+              for (const [fieldName, fieldDef] of Object.entries(field)) {
+                  const fieldValue = evalField(collectionRelationships, variables, state, fieldDef, item);
+                  if (fieldValue instanceof Error) return fieldValue;
+                  row.set(fieldName, fieldValue);
+              }
+              rows.push(row);
+          }
+          return rows;
+      })
+    : null;
+
+function evalField(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    field: models.Field,
+    item: Row
+): models.RowFieldValue | Error {
+    switch (field.type) {
+        case 'Column': {
+            const columnValue = evalColumn(item, field.column);
+            return new models.RowFieldValue(columnValue);
+        }
+        case 'Relationship': {
+            const relationship = collectionRelationships.get(field.relationship);
+            if (!relationship) {
+                throw new Error("Invalid relationship name");
+            }
+
+            const source = [item];
+            const collection = evalPathElement(
+                collectionRelationships,
+                variables,
+                state,
+                relationship,
+                field.arguments,
+                source,
+                { type: 'And', expressions: [] } // Empty 'And' expression
+            );
+            if (collection instanceof Error) return collection;
+
+            const rows = executeQuery(
+                collectionRelationships,
+                variables,
+                state,
+                field.query,
+                Root.CurrentRow, // Assuming an equivalent of Root::CurrentRow
+                collection
+            );
+            if (rows instanceof Error) return rows;
+
+            return new models.RowFieldValue(rows);
+        }
+        default:
+            throw new Error(`Unknown field type: ${field.type}`);
+    }
+}
+

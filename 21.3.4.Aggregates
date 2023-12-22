@@ -1,0 +1,60 @@
+
+const aggregates = query.aggregates
+    ? (() => {
+        const row = new Map<string, any>();
+        for (const [aggregateName, aggregate] of Object.entries(query.aggregates)) {
+            const evalResult = evalAggregate(aggregate, paginated);
+            if (evalResult instanceof Error) return evalResult;
+            row.set(aggregateName, evalResult);
+        }
+        return row;
+    })()
+    : null;
+
+function evalAggregate(
+    aggregate: models.Aggregate,
+    paginated: Array<Map<string, any>>
+): any | Error {
+    switch (aggregate.type) {
+        case 'StarCount':
+            return paginated.length;
+
+        case 'ColumnCount':
+            const values = paginated
+                .map(row => row.get(aggregate.column))
+                .filter(val => val !== undefined);
+
+            const nonNullValues = values.filter(val => val !== null);
+
+            const distinctValues = aggregate.distinct
+                ? Array.from(new Set(nonNullValues.map(val => JSON.stringify(val)))).length
+                : nonNullValues.length;
+
+            return distinctValues;
+
+        case 'SingleColumn':
+            const columnValues = paginated
+                .map(row => row.get(aggregate.column))
+                .filter(val => val !== undefined);
+            return evalAggregateFunction(aggregate.function, columnValues);
+
+        default:
+            throw new Error(`Unsupported aggregate type: ${aggregate.type}`);
+    }
+}
+
+function evalAggregateFunction(
+    functionType: string,
+    values: any[]
+): any | Error {
+    switch (functionType) {
+        case 'min':
+            return Math.min(...values);
+
+        case 'max':
+            return Math.max(...values);
+
+        default:
+            throw new Error(`Invalid aggregation function: ${functionType}`);
+    }
+}

@@ -1,0 +1,80 @@
+async function sort(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    collection: Row[],
+    orderBy: models.OrderBy | null
+): Promise<Row[]> {
+    if (!orderBy) {
+        return collection;
+    }
+
+    let sortedCollection = [];
+    for (const itemToInsert of collection) {
+        let index = 0;
+        for (const other of sortedCollection) {
+            const orderResult = evalOrderBy(
+                collectionRelationships,
+                variables,
+                state,
+                orderBy,
+                other,
+                itemToInsert
+            );
+            if (orderResult === "greater") {
+                break;
+            } else {
+                index++;
+            }
+        }
+        sortedCollection.splice(index, 0, itemToInsert);
+    }
+    return sortedCollection;
+}
+
+function evalOrderBy(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    orderBy: models.OrderBy,
+    row1: Row,
+    row2: Row
+): "less" | "equal" | "greater" {
+    let result = "equal";
+
+    for (const element of orderBy.elements) {
+        const value1 = evalOrderByElement(collectionRelationships, variables, state, element, row1);
+        const value2 = evalOrderByElement(collectionRelationships, variables, state, element, row2);
+
+        let comparisonResult;
+        switch (element.orderDirection) {
+            case models.OrderDirection.Asc:
+                comparisonResult = compare(value1, value2);
+                break;
+            case models.OrderDirection.Desc:
+                comparisonResult = compare(value2, value1);
+                break;
+        }
+
+        if (comparisonResult !== "equal") {
+            result = comparisonResult;
+            break;
+        }
+    }
+
+    return result;
+}
+
+function evalOrderByElement(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    orderByElement: models.OrderByElement,
+    row: Row
+): any {
+    // Function implementation here
+}
+
+function compare(value1: any, value2: any): "less" | "equal" | "greater" {
+    // Function implementation here
+}

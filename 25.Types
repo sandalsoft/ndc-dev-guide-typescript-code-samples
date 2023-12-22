@@ -1,0 +1,540 @@
+interface Aggregate {
+    type: string;
+    column?: string;
+    distinct?: boolean;
+    function?: string;
+}
+
+interface AggregateFunctionDefinition {
+    result_type: Type;
+}
+
+interface Argument {
+    type: string;
+    name?: string;
+    value?: any;
+}
+
+interface ArgumentInfo {
+    description?: string;
+    type: Type;
+}
+
+enum BinaryArrayComparisonOperator {
+    In = "in",
+}
+
+interface BinaryComparisonOperator {
+    type: string;
+    name?: string;
+}
+
+interface Capabilities {
+    query: QueryCapabilities;
+    explain?: LeafCapability | null;
+    relationships?: RelationshipCapabilities | null;
+}
+
+interface CapabilitiesResponse {
+    versions: string;
+    capabilities: Capabilities;
+}
+
+interface ComparisonOperatorDefinition {
+    argument_type: Type;
+}
+
+interface ComparisonTarget {
+    type: string;
+    name: string;
+    path?: PathElement[];
+}
+
+interface ComparisonValue {
+    type: string;
+    column?: ComparisonTarget;
+    value?: any;
+    name?: string;
+}
+
+enum RelationshipType {
+    Object = "object",
+    Array = "array",
+}
+
+interface ErrorResponse {
+    message: string;
+    details: any;
+}
+
+interface ExistsInCollection {
+    type: string;
+    relationship?: string;
+    arguments?: RelationshipArgument[];
+    collection?: string;
+}
+
+interface ExplainResponse {
+    details: Record<string, string>;
+}
+
+interface Expression {
+    type: string;
+    expressions?: Expression[];
+    expression?: Expression;
+    column?: ComparisonTarget;
+    operator?: UnaryComparisonOperator | BinaryComparisonOperator | BinaryArrayComparisonOperator;
+    value?: ComparisonValue | ComparisonValue[];
+    in_collection?: ExistsInCollection;
+    predicate?: Expression;
+}
+
+interface Field {
+    type: string;
+    column?: string;
+    query?: Query;
+    relationship?: string;
+    arguments?: RelationshipArgument[];
+}
+
+interface ForeignKeyConstraint {
+    column_mapping: Record<string, string>;
+    foreign_collection: string;
+}
+
+interface FunctionInfo {
+    name: string;
+    description?: string;
+    arguments: Record<string, ArgumentInfo>;
+    result_type: Type;
+}
+
+interface LeafCapability { }
+
+interface MutationOperation {
+    type: string;
+    name?: string;
+    arguments?: Record<string, any>;
+    fields?: Record<string, Field>;
+}
+
+interface MutationOperationResults {
+    affected_rows: number;
+    returning?: Record<string, RowFieldValue>[];
+}
+
+interface MutationRequest {
+    operations: MutationOperation[];
+    collection_relationships: Record<string, Relationship>;
+}
+
+interface MutationResponse {
+    operation_results: MutationOperationResults[];
+}
+
+interface ObjectField {
+    description?: string;
+    type: Type;
+}
+
+interface ObjectType {
+    description?: string;
+    fields: Record<string, ObjectField>;
+}
+
+interface OrderBy {
+    elements: OrderByElement[];
+}
+
+interface OrderByElement {
+    order_direction: OrderDirection;
+    target: OrderByTarget;
+}
+
+interface OrderByTarget {
+    type: string;
+    name: string;
+    path?: PathElement[];
+}
+
+enum OrderDirection {
+    Asc = "asc",
+    Desc = "desc",
+}
+
+interface PathElement {
+    relationship: string;
+    arguments: Record<string, RelationshipArgument>;
+    predicate: Expression;
+}
+
+interface ProcedureInfo {
+    name: string;
+    description?: string;
+    arguments: Record<string, ArgumentInfo>;
+    result_type: Type;
+}
+
+interface Query {
+    aggregates?: Record<string, Aggregate>;
+    fields?: Record<string, Field>;
+    limit?: number;
+    offset?: number;
+    order_by?: OrderBy;
+    where?: Expression;
+}
+
+interface QueryCapabilities {
+    aggregates?: LeafCapability;
+    variables?: LeafCapability;
+}
+
+interface QueryRequest {
+    collection: string;
+    query: Query;
+    arguments: Record<string, Argument>;
+    collection_relationships: Record<string, Relationship>;
+    variables?: Record<string, any>[];
+}
+
+interface QueryResponse {
+    0: RowSet;
+}
+
+interface Relationship {
+    column_mapping: Record<string, string>;
+    relationship_type: RelationshipType;
+    target_collection: string;
+    arguments: Record<string, RelationshipArgument>;
+}
+
+interface RelationshipArgument {
+    type: string;
+    name?: string;
+    value?: any;
+}
+
+interface RelationshipCapabilities {
+    relation_comparisons?: LeafCapability;
+    order_by_aggregate?: LeafCapability;
+}
+
+interface RowFieldValue {
+    0: any;
+}
+
+interface RowSet {
+    aggregates?: Record<string, any>;
+    rows?: Record<string, RowFieldValue>[];
+}
+
+interface ScalarType {
+    aggregate_functions: Record<string, AggregateFunctionDefinition>;
+    comparison_operators: Record<string, ComparisonOperatorDefinition>;
+}
+
+interface SchemaResponse {
+    scalar_types: Record<string, ScalarType>;
+    object_types: Record<string, ObjectType>;
+    collections: CollectionInfo[];
+    functions: FunctionInfo[];
+    procedures: ProcedureInfo[];
+}
+
+interface CollectionInfo {
+    name: string;
+    description?: string;
+    arguments: Record<string, ArgumentInfo>;
+    type: string;
+    uniqueness_constraints: Record<string, UniquenessConstraint>;
+    foreign_keys: Record<string, ForeignKeyConstraint>;
+}
+
+//   enum Type {
+//     Named = "named",
+//     Nullable = "nullable",
+//     Array = "array",
+//   }
+
+enum UnaryComparisonOperator {
+    IsNull = "is_null",
+}
+interface UniquenessConstraint {
+    unique_columns: string[];
+}
+
+interface TypeNamed {
+    type: "named";
+    name: string;
+}
+
+interface TypeNullable {
+    type: "nullable";
+    underlying_type: Type;
+}
+
+interface TypeArray {
+    type: "array";
+    element_type: Type;
+}
+
+type Type = TypeNamed | TypeNullable | TypeArray;
+
+const aggregate: Aggregate = {
+    type: "ColumnCount",
+    column: "example_column",
+    distinct: true,
+};
+
+const aggregateFunctionDefinition: AggregateFunctionDefinition = {
+    result_type: {
+        type: "named",
+        name: "ResultType",
+    },
+};
+
+const argument: Argument = {
+    type: "Variable",
+    name: "example_variable",
+};
+
+const argumentInfo: ArgumentInfo = {
+    description: "Example argument",
+    type: {
+        type: "named",
+        name: "ArgumentType",
+    },
+};
+
+const binaryComparisonOperator: BinaryComparisonOperator = {
+    type: "Equal",
+};
+
+const comparisonOperatorDefinition: ComparisonOperatorDefinition = {
+    argument_type: {
+        type: "named",
+        name: "ArgumentType",
+    },
+};
+
+const comparisonTarget: ComparisonTarget = {
+    type: "Column",
+    name: "example_column",
+    path: [
+        {
+            relationship: "example_relationship",
+            arguments: {},
+            predicate: {
+                type: "And",
+                expressions: [],
+            },
+        },
+    ],
+};
+
+const comparisonValue: ComparisonValue = {
+    type: "Column",
+    column: comparisonTarget,
+};
+
+const existsInCollection: ExistsInCollection = {
+    type: "Related",
+    relationship: "example_relationship",
+    arguments: [],
+};
+
+const explainResponse: ExplainResponse = {
+    details: {
+        key1: "value1",
+        key2: "value2",
+    },
+};
+
+const expression: Expression = {
+    type: "And",
+    expressions: [],
+};
+
+const field: Field = {
+    type: "Column",
+    column: "example_column",
+};
+
+const foreignKeyConstraint: ForeignKeyConstraint = {
+    column_mapping: {
+        local_column: "foreign_column",
+    },
+    foreign_collection: "foreign_collection",
+};
+
+const functionInfo: FunctionInfo = {
+    name: "example_function",
+    description: "Example function",
+    arguments: {},
+    result_type: {
+        type: "named",
+        name: "ResultType",
+    },
+};
+
+const leafCapability: LeafCapability = {};
+
+const mutationOperation: MutationOperation = {
+    type: "Procedure",
+    name: "example_procedure",
+    arguments: {},
+    fields: {},
+};
+
+const mutationOperationResults: MutationOperationResults = {
+    affected_rows: 0,
+    returning: [],
+};
+
+const mutationRequest: MutationRequest = {
+    operations: [mutationOperation],
+    collection_relationships: {},
+};
+
+const mutationResponse: MutationResponse = {
+    operation_results: [mutationOperationResults],
+};
+
+const objectField: ObjectField = {
+    description: "Example field",
+    type: {
+        type: "named",
+        name: "FieldType",
+    },
+};
+
+const objectType: ObjectType = {
+    description: "Example object type",
+    fields: {
+        field1: objectField,
+    },
+};
+
+const orderBy: OrderBy = {
+    elements: [
+        {
+            order_direction: OrderDirection.Asc,
+            target: {
+                type: "Column",
+                name: "example_column",
+            },
+        },
+    ],
+};
+
+const orderByElement: OrderByElement = {
+    order_direction: OrderDirection.Asc,
+    target: {
+        type: "Column",
+        name: "example_column",
+    },
+};
+
+const orderByTarget: OrderByTarget = {
+    type: "Column",
+    name: "example_column",
+    path: [
+        {
+            relationship: "example_relationship",
+            arguments: {},
+            predicate: {
+                type: "And",
+                expressions: [],
+            },
+        },
+    ],
+};
+
+const pathElement: PathElement = {
+    relationship: "example_relationship",
+    arguments: {},
+    predicate: {
+        type: "And",
+        expressions: [],
+    },
+};
+
+const procedureInfo: ProcedureInfo = {
+    name: "example_procedure",
+    description: "Example procedure",
+    arguments: {},
+    result_type: {
+        type: "named",
+        name: "ResultType",
+    },
+};
+
+const query: Query = {
+    aggregates: {},
+    fields: {},
+    limit: 10,
+    offset: 0,
+    order_by: orderBy,
+    where: {
+        type: "And",
+        expressions: [],
+    },
+};
+
+const queryCapabilities: QueryCapabilities = {
+    aggregates: leafCapability,
+    variables: leafCapability,
+};
+
+const queryRequest: QueryRequest = {
+    collection: "example_collection",
+    query: query,
+    arguments: {},
+    collection_relationships: {},
+    variables: [],
+};
+
+const queryResponse: QueryResponse = [{ aggregates: {}, rows: [] }];
+
+const relationship: Relationship = {
+    column_mapping: {
+        local_column: "foreign_column",
+    },
+    relationship_type: RelationshipType.Object,
+    target_collection: "foreign_collection",
+    arguments: {},
+};
+
+const relationshipArgument: RelationshipArgument = {
+    type: "Variable",
+    name: "example_variable",
+};
+
+const relationshipCapabilities: RelationshipCapabilities = {
+    relation_comparisons: leafCapability,
+    order_by_aggregate: leafCapability,
+};
+
+const rowFieldValue: RowFieldValue = [null];
+
+const rowSet: RowSet = {
+    aggregates: {},
+    rows: [],
+};
+
+const scalarType: ScalarType = {
+    aggregate_functions: {},
+    comparison_operators: {},
+};
+
+const schemaResponse: SchemaResponse = {
+    scalar_types: {
+        ScalarType: scalarType,
+    },
+    object_types: {
+        ObjectType: objectType,
+    },
+    collections: [],
+    functions: [],
+    procedures: [],
+};

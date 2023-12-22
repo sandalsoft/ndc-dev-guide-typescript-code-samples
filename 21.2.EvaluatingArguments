@@ -1,0 +1,69 @@
+function executeQueryWithVariables(
+    collection: string,
+    arguments: Map<string, models.Argument>,
+    collectionRelationships: Map<string, models.Relationship>,
+    query: models.Query,
+    variables: Map<string, any>,
+    state: AppState
+): models.RowSet | Error {
+    let argumentValues = new Map<string, any>();
+
+    for (const [argumentName, argumentValue] of arguments) {
+        const evalResult = evalArgument(variables, argumentValue);
+        if (evalResult instanceof Error) {
+            return evalResult;
+        }
+
+        if (argumentValues.has(argumentName)) {
+            return new Error("duplicate argument names");
+        }
+
+        argumentValues.set(argumentName, evalResult);
+    }
+
+    const collectionResult = getCollectionByName(collection, argumentValues, state);
+    if (collectionResult instanceof Error) {
+        return collectionResult;
+    }
+
+    return executeQuery(
+        collectionRelationships,
+        variables,
+        state,
+        query,
+        Root.CurrentRow,
+        collectionResult
+    );
+}
+
+function getCollectionByName(
+    collectionName: string,
+    arguments: Map<string, any>,
+    state: AppState
+): Vec<Row> | Error {
+    switch (collectionName) {
+        case "articles":
+            return Array.from(state.articles.values());
+        case "authors":
+            return Array.from(state.authors.values());
+        case "articles_by_author":
+            // ... similar logic as in Rust code for articles_by_author
+            break;
+        case "latest_article_id":
+            // ... similar logic as in Rust code for latest_article_id
+            break;
+        default:
+            return new Error("invalid collection name");
+    }
+}
+
+function executeQuery(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    query: models.Query,
+    root: Root,
+    collection: Vec<Row>
+): models.RowSet | Error {
+    // Function implementation here
+}

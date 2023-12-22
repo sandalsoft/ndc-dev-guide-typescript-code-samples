@@ -1,0 +1,213 @@
+async function filterCollection(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    sorted: Row[],
+    queryPredicate: models.Expression | null
+): Promise<Row[]> {
+    if (!queryPredicate) {
+        return sorted;
+    }
+
+    let filtered: Row[] = [];
+    for (const item of sorted) {
+        let root = item; // Assuming current row as root for simplicity
+        if (await evalExpression(collectionRelationships, variables, state, queryPredicate, root, item)) {
+            filtered.push(item);
+        }
+    }
+    return filtered;
+}
+
+// Continuing the implementation of evalExpression function
+async function evalExpression(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    expr: models.Expression,
+    root: Row,
+    item: Row
+): Promise<boolean> {
+    switch (expr.type) {
+        case 'And': {
+            for (const subExpr of expr.expressions) {
+                if (!(await evalExpression(collectionRelationships, variables, state, subExpr, root, item))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        case 'Or': {
+            for (const subExpr of expr.expressions) {
+                if (await evalExpression(collectionRelationships, variables, state, subExpr, root, item)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case 'Not': {
+            const result = await evalExpression(collectionRelationships, variables, state, expr.expression, root, item);
+            return !result;
+        }
+
+        // Part of the evalExpression function
+        // Part of the evalExpression function, assuming it's within a larger switch-case structure
+        case 'BinaryComparisonOperator':
+            if (expr.operatorType === 'Other' && expr.name === 'like') {
+                const columnValues = evalComparisonTarget(
+                    collectionRelationships,
+                    variables,
+                    state,
+                    expr.column,
+                    root,
+                    item
+                );
+                const regexValues = evalComparisonValue(
+                    collectionRelationships,
+                    variables,
+                    state,
+                    expr.value,
+                    root,
+                    item
+                );
+
+                for (const columnVal of columnValues) {
+                    for (const regexVal of regexValues) {
+                        if (typeof columnVal === 'string' && typeof regexVal === 'string') {
+                            const regex = new RegExp(regexVal);
+                            if (regex.test(columnVal)) {
+                                return true;
+                            }
+                        } else {
+                            throw new Error('Column value or regex is not a string');
+                        }
+                    }
+                }
+                return false;
+            } else {
+                throw new Error(`Unsupported other binary comparison operator: ${expr.name}`);
+            }
+            break;
+
+
+        // Part of the evalExpression function
+        case 'BinaryArrayComparisonOperator': {
+            switch (expr.operator) {
+                case models.BinaryArrayComparisonOperator.In: {
+                    const leftValues = evalComparisonTarget(
+                        collectionRelationships, state, expr.column, root, item);
+
+                    for (const comparisonValue of expr.values) {
+                        const rightValues = evalComparisonValue(
+                            collectionRelationships,
+                            variables,
+                            state,
+                            comparisonValue,
+                            root,
+                            item
+                        );
+
+                        for (const leftVal of leftValues) {
+                            for (const rightVal of rightValues) {
+                                if (leftVal === rightVal) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                }
+                // Other BinaryArrayComparisonOperators can be added here
+            }
+            break;
+        }
+        case 'Other': {
+            // Implement logic for other operators
+            break;
+        }
+        // Part of the evalExpression function
+        case 'Exists': {
+            const query: models.Query = {
+                aggregates: null,
+                fields: new Map(), // Assuming IndexMap equivalent in TypeScript is a Map
+                limit: null,
+                offset: null,
+                orderBy: null,
+                predicate: predicate.clone(), // Assuming deep clone method exists
+            };
+
+            const collection = evalInCollection(
+                collectionRelationships,
+                item,
+                variables,
+                state,
+                expr.inCollection
+            );
+            if (collection instanceof Error) return collection;
+
+            const rowSet = executeQuery(
+                collectionRelationships,
+                variables,
+                state,
+                query,
+                Root.ExplicitRow, // Assuming an equivalent for Root::ExplicitRow exists
+                root,
+                collection
+            );
+            if (rowSet instanceof Error) return rowSet;
+
+            const rows = rowSet.rows || [];
+            return rows.length > 0;
+        }
+
+        // Part of the evalExpression function
+        case 'UnaryComparisonOperator': {
+            switch (expr.operator) {
+                case models.UnaryComparisonOperator.IsNull: {
+                    const values = evalComparisonTarget(
+                        collectionRelationships,
+                        variables,
+                        state,
+                        expr.column,
+                        root,
+                        item
+                    );
+                    return values.some(val => val === null || val === undefined);
+                }
+                // Add cases for other UnaryComparisonOperators if needed
+            }
+            break;
+        }
+
+        default:
+            throw new Error(`Unsupported expression type: ${expr.type}`);
+    }
+}
+
+
+function evalComparisonTarget(
+    collectionRelationships: Map<string, models.Relationship>,
+    variables: Map<string, any>,
+    state: AppState,
+    target: models.ComparisonTarget,
+    root: Row,
+    item: Row
+): any[] | Error {
+    switch (target.type) {
+        case 'Column': {
+            const rows = evalPath(collectionRelationships, variables, state, target.path, item);
+            if (rows instanceof Error) return rows;
+
+            const values = rows.map(row => evalColumn(row, target.name));
+            return values;
+        }
+        case 'RootCollectionColumn': {
+            const value = evalColumn(root, target.name);
+            return [value];
+        }
+        default:
+            return new Error(`Unknown comparison target type: ${target.type}`);
+    }
+}
+
+

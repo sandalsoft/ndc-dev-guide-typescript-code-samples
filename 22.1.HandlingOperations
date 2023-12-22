@@ -1,0 +1,14 @@
+
+function executeMutationOperation(
+    state: AppState,
+    collectionRelationships: Map<string, models.Relationship>,
+    operation: models.MutationOperation
+): models.MutationOperationResults | Error {
+    switch (operation.type) {
+        case 'Procedure':
+            return executeProcedure(state, operation.name, operation.arguments, operation.fields, collectionRelationships);
+
+        // Add cases for other types of mutation operations if needed
+    }
+}
+

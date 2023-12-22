@@ -1,0 +1,38 @@
+async function postQuery(
+    state: { state: AppState },
+    request: models.QueryRequest
+): Promise<models.QueryResponse> {
+    const lockedState = state.state; // Assuming direct access to AppState in TypeScript
+
+    const variableSets = request.variables || [new Map<string, any>()];
+
+    let rowSets = [];
+
+    for (const variables of variableSets) {
+        const rowSet = executeQueryWithVariables(
+            request.collection,
+            request.arguments,
+            request.collectionRelationships,
+            request.query,
+            variables,
+            lockedState
+        );
+        if (rowSet instanceof Error) {
+            throw rowSet;
+        }
+        rowSets.push(rowSet);
+    }
+
+    return { rowSets };
+}
+
+function executeQueryWithVariables(
+    collection: string,
+    arguments: Map<string, models.Argument>,
+    collectionRelationships: Map<string, models.Relationship>,
+    query: models.Query,
+    variables: Map<string, any>,
+    state: AppState
+): models.RowSet | Error {
+    // Function implementation here
+}

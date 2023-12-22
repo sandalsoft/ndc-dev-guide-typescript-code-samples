@@ -1,0 +1,176 @@
+/*
+models type refers to a namespace or a module that contains TypeScript type definitions or interfaces for various data structures used in the code. These types or interfaces define the shape of the data for CollectionInfo, FunctionInfo, ProcedureInfo, and other entities used in the code.
+
+For example, models.CollectionInfo might be an interface that defines the properties and their types for a collection, such as name, description, collectionType, arguments, foreignKeys, and uniquenessConstraints. Each of these properties would have its own type, further detailing the structure of a collection.
+
+These model types are assumed to be pre-defined in your TypeScript project. If they are not already defined, you would need to create these interfaces or types to match the structure used in the Rust code. For instance, a possible definition for CollectionInfo might look like this:
+
+namespace models {
+    export interface CollectionInfo {
+        name: string;
+        description: string;
+        collectionType: string;
+        arguments: Record<string, ArgumentInfo>;
+        foreignKeys: Record<string, ForeignKeyConstraint>;
+        uniquenessConstraints: Record<string, UniquenessConstraint>;
+    }
+
+    export interface ArgumentInfo {
+        argumentType: Type;
+        description?: string;
+    }
+
+    // ... definitions for other types like ForeignKeyConstraint, UniquenessConstraint, Type, etc.
+}
+In this example, ArgumentInfo, ForeignKeyConstraint, UniquenessConstraint, and Type would also be defined within the models namespace, providing a comprehensive set of type definitions that align with the structure of your data.
+
+//Example import statement for models
+import * as models from "./models";
+*/
+
+async function getSchema(): Promise<models.SchemaResponse> {
+    // ...
+    return {
+        scalarTypes,
+        objectTypes,
+        collections,
+        functions,
+        procedures,
+    };
+}
+
+const scalarTypes: Record<string, models.ScalarType> = {
+    "String": {
+        aggregateFunctions: {},
+        comparisonOperators: {
+            "like": {
+                argumentType: { name: "String" }
+            }
+        }
+    },
+    "Int": {
+        aggregateFunctions: {
+            "max": {
+                resultType: { underlyingType: { name: "Int" } }
+            },
+            "min": {
+                resultType: { underlyingType: { name: "Int" } }
+            }
+        },
+        comparisonOperators: {}
+    }
+};
+
+
+const objectTypes: Record<string, any> = {
+    "article": articleType,
+    "author": authorType,
+};
+
+const articleType: models.ObjectType = {
+    description: "An article",
+    fields: {
+        "id": {
+            description: "The article's primary key",
+            type: { name: "Int" }
+        },
+        "title": {
+            description: "The article's title",
+            type: { name: "String" }
+        },
+        "author_id": {
+            description: "The article's author ID",
+            type: { name: "Int" }
+        }
+    }
+};
+
+const authorType: models.ObjectType = {
+    description: "An author",
+    fields: {
+        "id": {
+            description: "The author's primary key",
+            type: { name: "Int" }
+        },
+        "first_name": {
+            description: "The author's first name",
+            type: { name: "String" }
+        },
+        "last_name": {
+            description: "The author's last name",
+            type: { name: "String" }
+        }
+    }
+};
+
+
+
+const authorsCollection: models.CollectionInfo = {
+    name: "authors",
+    description: "A collection of authors",
+    collectionType: "author",
+    arguments: {},
+    foreignKeys: {},
+    uniquenessConstraints: {
+        "AuthorByID": {
+            uniqueColumns: ["id"]
+        }
+    }
+};
+
+const articlesCollection: models.CollectionInfo = {
+    name: "articles",
+    description: "A collection of articles",
+    collectionType: "article",
+    arguments: {},
+    foreignKeys: {
+        "Article_AuthorID": {
+            foreignCollection: "authors",
+            columnMapping: { "author_id": "id" }
+        }
+    },
+    uniquenessConstraints: {
+        "ArticleByID": {
+            uniqueColumns: ["id"]
+        }
+    }
+};
+
+const articlesByAuthorCollection: models.CollectionInfo = {
+    name: "articles_by_author",
+    description: "Articles parameterized by author",
+    collectionType: "article",
+    arguments: {
+        "author_id": {
+            argumentType: { name: "Int" },
+            description: null
+        }
+    },
+    foreignKeys: {},
+    uniquenessConstraints: {}
+};
+
+const latestArticleIdFunction: models.FunctionInfo = {
+    name: "latest_article_id",
+    description: "Get the ID of the most recent article",
+    resultType: { underlyingType: { name: "Int" } },
+    arguments: {}
+};
+
+const upsertArticle: models.ProcedureInfo = {
+    name: "upsert_article",
+    description: "Insert or update an article",
+    arguments: {
+        "article": {
+            description: "The article to insert or update",
+            argumentType: { name: "article" }
+        }
+    },
+    resultType: { underlyingType: { name: "article" } }
+};
+
+const collections = [
+    articlesCollection,
+    authorsCollection,
+    articlesByAuthorCollection
+];
